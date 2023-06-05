@@ -29,13 +29,6 @@ const containerRectableWatcher = watchRectangles();
 
 const isMobile = Utils.isMobile();
 
-const getDocumentElement = (el: { getRootNode: () => any; }) => {
-  const rootNode = el.getRootNode ? el.getRootNode() : null;
-  const isShadowParent = rootNode && rootNode.toString && rootNode.toString() === '[object ShadowRoot]'
-
-  return isShadowParent ? rootNode.querySelector('div') : window.document
-} 
-
 function listenEvents(element: HTMLElement) {
   if (typeof window !== 'undefined') {
     addGrabListeners(element);
@@ -43,35 +36,35 @@ function listenEvents(element: HTMLElement) {
 }
 
 function addGrabListeners(element: HTMLElement) {
-  const el = getDocumentElement(element);
+  const el = Utils.getDocument(element);
   grabEvents.forEach(e => {
     el.addEventListener(e, onMouseDown as any, { passive: false } as any);
   });
 }
 
 function addMoveListeners(element: HTMLElement) {
-  const el = getDocumentElement(element);
+  const el = Utils.getDocument(element);
   moveEvents.forEach(e => {
     el.addEventListener(e, onMouseMove as any, { passive: false } as any);
   });
 }
 
 function removeMoveListeners(element: HTMLElement) {
-  const el = getDocumentElement(element);
+  const el = Utils.getDocument(element);
   moveEvents.forEach(e => {
     el.removeEventListener(e, onMouseMove as any, { passive: false } as any);
   });
 }
 
 function addReleaseListeners(element: HTMLElement) {
-  const el = getDocumentElement(element);
+  const el = Utils.getDocument(element);
   releaseEvents.forEach(e => {
     el.addEventListener(e, onMouseUp, { passive: false });
   });
 }
 
 function removeReleaseListeners(element: HTMLElement) {
-  const el = getDocumentElement(element);
+  const el = Utils.getDocument(element);
   releaseEvents.forEach(e => {
     el.removeEventListener(e, onMouseUp as any, { passive: false } as any);
   });
@@ -316,13 +309,13 @@ const handleDragStartConditions = (function handleDragStartConditions() {
 
   function deregisterEvent(element: HTMLElement) {
     clearTimeout(timer);
-    moveEvents.forEach(e => getDocumentElement(element).removeEventListener(e, onMove as any), {
+    moveEvents.forEach(e => Utils.getDocument(element).removeEventListener(e, onMove as any), {
       passive: false,
     });
-    releaseEvents.forEach(e => getDocumentElement(element).removeEventListener(e, onUp), {
+    releaseEvents.forEach(e => Utils.getDocument(element).removeEventListener(e, onUp), {
       passive: false,
     });
-    getDocumentElement(element).removeEventListener('drag', onHTMLDrag, {
+    Utils.getDocument(element).removeEventListener('drag', onHTMLDrag, {
       passive: false,
     } as any);
   }
@@ -338,7 +331,7 @@ const handleDragStartConditions = (function handleDragStartConditions() {
     delay = typeof _delay === 'number' ? _delay : isMobile ? 200 : 0;
     clb = _clb;
 
-    registerEvents(getDocumentElement(_startEvent.target as HTMLElement));
+    registerEvents(Utils.getDocument(_startEvent.target as HTMLElement));
   };
 })();
 
@@ -369,10 +362,10 @@ function onMouseDown(event: MouseEvent & TouchEvent) {
         const onMouseUp = () => {
           Utils.removeClass(window.document.body, constants.disbaleTouchActions);
           Utils.removeClass(window.document.body, constants.noUserSelectClass);
-          getDocumentElement(e.target as Element).removeEventListener('mouseup', onMouseUp);
+          Utils.getDocument(e.target as Element).removeEventListener('mouseup', onMouseUp);
         }
 
-        getDocumentElement(e.target as Element).addEventListener('mouseup', onMouseUp);
+        Utils.getDocument(e.target as Element).addEventListener('mouseup', onMouseUp);
       }
 
       if (startDrag) {

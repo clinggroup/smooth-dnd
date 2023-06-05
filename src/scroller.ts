@@ -1,5 +1,5 @@
 import { DraggableInfo, IContainer, Axis, Rect, ScrollAxis, Position } from "./interfaces";
-import { getScrollingAxis, hasClass, getVisibleRect } from "./utils";
+import { getScrollingAxis, hasClass, getVisibleRect, getDocument } from "./utils";
 import { preventAutoScrollClass } from "./constants";
 
 type Direction = 'begin' | 'end';
@@ -200,7 +200,7 @@ function setScrollParams(animatorInfos: ScrollerAnimator[], position: Position) 
 }
 
 function getTopmostScrollAnimator(animatorInfos: ScrollerAnimator[], position: Position): ScrollerAnimator | null {
-	let current = document.elementFromPoint(position.x, position.y);
+	let current = getDocument(animatorInfos[0].scrollerElement).elementFromPoint(position.x, position.y);
 
 	while (current) {
 		const scrollAnimator = animatorInfos.find(p => p.scrollerElement === current);

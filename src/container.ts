@@ -5,14 +5,7 @@ import { ContainerOptions, SmoothDnD, SmoothDnDCreator, DropPlaceholderOptions }
 import { ContainerProps, DraggableInfo, DragInfo, DragResult, ElementX, IContainer, LayoutManager } from './interfaces';
 import layoutManager from './layoutManager';
 import Mediator from './mediator';
-import { addClass, getParent, getParentRelevantContainerElement, hasClass, listenScrollParent, removeClass } from './utils';
-
-const getDocument = (el: { getRootNode: () => any; }) => {
-  const rootNode = el.getRootNode ? el.getRootNode() : null;
-  const isShadowParent = rootNode && rootNode.toString && rootNode.toString() === '[object ShadowRoot]'
-
-  return isShadowParent ? rootNode : window.document
-}
+import { getDocument, addClass, getParent, getParentRelevantContainerElement, hasClass, listenScrollParent, removeClass } from './utils';
 
 function setAnimation(element: HTMLElement, add: boolean, animationDuration = defaultOptions.animationDuration) {
   if (add) {
@@ -781,15 +774,18 @@ function Container(element: HTMLElement): (options?: ContainerOptions) => IConta
   };
 }
 
+let _Mediator: any = null;
+
 // exported part of container
 const smoothDnD: SmoothDnDCreator = function (element: HTMLElement, options?: ContainerOptions): SmoothDnD {
   const containerIniter = Container(element);
   const container = containerIniter(options);
   (element as ElementX)[containerInstance] = container;
-  Mediator(element).register(container);
+  _Mediator = Mediator(element)
+  _Mediator.register(container);
   return {
     dispose() {
-      Mediator.unregister(container);
+      _Mediator.unregister(container);
       container.dispose(container);
     },
     setOptions(options: ContainerOptions, merge?: boolean) {
@@ -802,11 +798,11 @@ const smoothDnD: SmoothDnDCreator = function (element: HTMLElement, options?: Co
 // in react,vue,angular this value will be set to false
 smoothDnD.wrapChild = true;
 smoothDnD.cancelDrag = function () {
-  Mediator.cancelDrag();
+  _Mediator.cancelDrag();
 }
 
 smoothDnD.isDragging = function () {
-  return Mediator.isDragging();
+  return _Mediator.isDragging();
 }
 
 export default smoothDnD;

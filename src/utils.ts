@@ -313,3 +313,10 @@ export const getDistanceToParent = (parent: HTMLElement, child: HTMLElement): nu
 export function isVisible(rect: Rect): boolean {
   return !(rect.bottom <= rect.top || rect.right <= rect.left);
 }
+
+export const getDocument = (el: { getRootNode: () => any; }) => {
+  const rootNode = el.getRootNode ? el.getRootNode() : null;
+  const isShadowParent = rootNode && rootNode.toString && rootNode.toString() === '[object ShadowRoot]'
+
+  return isShadowParent ? rootNode : window.document
+}
