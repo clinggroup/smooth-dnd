@@ -7,6 +7,13 @@ import layoutManager from './layoutManager';
 import Mediator from './mediator';
 import { addClass, getParent, getParentRelevantContainerElement, hasClass, listenScrollParent, removeClass } from './utils';
 
+const getDocument = (el: { getRootNode: () => any; }) => {
+  const rootNode = el.getRootNode ? el.getRootNode() : null;
+  const isShadowParent = rootNode && rootNode.toString && rootNode.toString() === '[object ShadowRoot]'
+
+  return isShadowParent ? rootNode : window.document
+}
+
 function setAnimation(element: HTMLElement, add: boolean, animationDuration = defaultOptions.animationDuration) {
   if (add) {
     addClass(element, animationClass);
@@ -211,7 +218,7 @@ function setRemovedItemVisibilty({ draggables, layout }: ContainerProps) {
 
 function getPosition({ element, layout }: ContainerProps) {
   return ({ draggableInfo }: DragInfo) => {
-    let hitElement = document.elementFromPoint(draggableInfo.position.x, draggableInfo.position.y);
+    let hitElement = getDocument(element).elementFromPoint(draggableInfo.position.x, draggableInfo.position.y);
 
     // TODO: if center is out of bounds use mouse position for hittest
     // if (!hitElement) {
