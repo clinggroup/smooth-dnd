@@ -779,7 +779,7 @@ const smoothDnD: SmoothDnDCreator = function (element: HTMLElement, options?: Co
   const containerIniter = Container(element);
   const container = containerIniter(options);
   (element as ElementX)[containerInstance] = container;
-  Mediator.register(container);
+  Mediator(element).register(container);
   return {
     dispose() {
       Mediator.unregister(container);

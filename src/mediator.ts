@@ -29,39 +29,51 @@ const containerRectableWatcher = watchRectangles();
 
 const isMobile = Utils.isMobile();
 
-function listenEvents() {
+const getDocumentElement = (el: { getRootNode: () => any; }) => {
+  const rootNode = el.getRootNode ? el.getRootNode() : null;
+  const isShadowParent = rootNode && rootNode.toString && rootNode.toString() === '[object ShadowRoot]'
+
+  return isShadowParent ? rootNode.querySelector('div') : window.document
+} 
+
+function listenEvents(element: HTMLElement) {
   if (typeof window !== 'undefined') {
-    addGrabListeners();
+    addGrabListeners(element);
   }
 }
 
-function addGrabListeners() {
+function addGrabListeners(element: HTMLElement) {
+  const el = getDocumentElement(element);
   grabEvents.forEach(e => {
-    window.document.addEventListener(e, onMouseDown as any, { passive: false } as any);
+    el.addEventListener(e, onMouseDown as any, { passive: false } as any);
   });
 }
 
-function addMoveListeners() {
+function addMoveListeners(element: HTMLElement) {
+  const el = getDocumentElement(element);
   moveEvents.forEach(e => {
-    window.document.addEventListener(e, onMouseMove as any, { passive: false } as any);
+    el.addEventListener(e, onMouseMove as any, { passive: false } as any);
   });
 }
 
-function removeMoveListeners() {
+function removeMoveListeners(element: HTMLElement) {
+  const el = getDocumentElement(element);
   moveEvents.forEach(e => {
-    window.document.removeEventListener(e, onMouseMove as any, { passive: false } as any);
+    el.removeEventListener(e, onMouseMove as any, { passive: false } as any);
   });
 }
 
-function addReleaseListeners() {
+function addReleaseListeners(element: HTMLElement) {
+  const el = getDocumentElement(element);
   releaseEvents.forEach(e => {
-    window.document.addEventListener(e, onMouseUp, { passive: false });
+    el.addEventListener(e, onMouseUp, { passive: false });
   });
 }
 
-function removeReleaseListeners() {
+function removeReleaseListeners(element: HTMLElement) {
+  const el = getDocumentElement(element);
   releaseEvents.forEach(e => {
-    window.document.removeEventListener(e, onMouseUp as any, { passive: false } as any);
+    el.removeEventListener(e, onMouseUp as any, { passive: false } as any);
   });
 }
 
@@ -91,7 +103,7 @@ function getGhostElement(wrapperElement: HTMLElement, { x, y }: Position, contai
   ghost.style.position = 'fixed';
   ghost.style.top = '0px';
   ghost.style.left = '0px';
-  ghost.style.transform = null;
+  ghost.style.transform = '';
   ghost.style.removeProperty('transform');
 
   if (container.shouldUseTransformForGhost()) {
@@ -270,54 +282,54 @@ const handleDragStartConditions = (function handleDragStartConditions() {
     const { clientX: currentX, clientY: currentY } = getPointerEvent(event);
     if (!delay) {
       if (Math.abs(startEvent.clientX - currentX) > moveThreshold || Math.abs(startEvent.clientY - currentY) > moveThreshold) {
-        return callCallback();
+        return callCallback(event.target as HTMLElement);
       }
     } else {
       if (Math.abs(startEvent.clientX - currentX) > maxMoveInDelay || Math.abs(startEvent.clientY - currentY) > maxMoveInDelay) {
-        deregisterEvent();
+        deregisterEvent(event.target as HTMLElement);
       }
     }
   }
 
-  function onUp() {
-    deregisterEvent();
+  function onUp(event: MouseEvent & TouchEvent) {
+    deregisterEvent(event.target as HTMLElement);
   }
-  function onHTMLDrag() {
-    deregisterEvent();
+  function onHTMLDrag(event: DragEvent) {
+    deregisterEvent(event.target as HTMLElement);
   }
 
-  function registerEvents() {
+  function registerEvents(element: HTMLElement) {
     if (delay) {
-      timer = setTimeout(callCallback, delay);
+      timer = setTimeout(() => callCallback(element), delay);
     }
 
-    moveEvents.forEach(e => window.document.addEventListener(e, onMove as any), {
+    moveEvents.forEach(e => element.addEventListener(e, onMove as any), {
       passive: false,
     });
-    releaseEvents.forEach(e => window.document.addEventListener(e, onUp), {
+    releaseEvents.forEach(e => element.addEventListener(e, onUp as any), {
       passive: false,
     });
-    window.document.addEventListener('drag', onHTMLDrag, {
+    element.addEventListener('drag', onHTMLDrag, {
       passive: false,
     });
   }
 
-  function deregisterEvent() {
+  function deregisterEvent(element: HTMLElement) {
     clearTimeout(timer);
-    moveEvents.forEach(e => window.document.removeEventListener(e, onMove as any), {
+    moveEvents.forEach(e => getDocumentElement(element).removeEventListener(e, onMove as any), {
       passive: false,
     });
-    releaseEvents.forEach(e => window.document.removeEventListener(e, onUp), {
+    releaseEvents.forEach(e => getDocumentElement(element).removeEventListener(e, onUp), {
       passive: false,
     });
-    window.document.removeEventListener('drag', onHTMLDrag, {
+    getDocumentElement(element).removeEventListener('drag', onHTMLDrag, {
       passive: false,
     } as any);
   }
 
-  function callCallback() {
+  function callCallback(element: HTMLElement) {
     clearTimeout(timer);
-    deregisterEvent();
+    deregisterEvent(element);
     clb();
   }
 
@@ -326,7 +338,7 @@ const handleDragStartConditions = (function handleDragStartConditions() {
     delay = typeof _delay === 'number' ? _delay : isMobile ? 200 : 0;
     clb = _clb;
 
-    registerEvents();
+    registerEvents(getDocumentElement(_startEvent.target as HTMLElement));
   };
 })();
 
@@ -357,18 +369,18 @@ function onMouseDown(event: MouseEvent & TouchEvent) {
         const onMouseUp = () => {
           Utils.removeClass(window.document.body, constants.disbaleTouchActions);
           Utils.removeClass(window.document.body, constants.noUserSelectClass);
-          window.document.removeEventListener('mouseup', onMouseUp);
+          getDocumentElement(e.target as Element).removeEventListener('mouseup', onMouseUp);
         }
 
-        window.document.addEventListener('mouseup', onMouseUp);
+        getDocumentElement(e.target as Element).addEventListener('mouseup', onMouseUp);
       }
 
       if (startDrag) {
         handleDragStartConditions(e, container.getOptions().dragBeginDelay!, () => {
           Utils.clearSelection();
           initiateDrag(e, Utils.getElementCursor(event.target as Element)!);
-          addMoveListeners();
-          addReleaseListeners();
+          addMoveListeners(event.target as HTMLElement);
+          addReleaseListeners(event.target as HTMLElement);
         });
       }
     }
@@ -463,9 +475,9 @@ function handleMissedDragFrame() {
   }
 }
 
-function onMouseUp() {
-  removeMoveListeners();
-  removeReleaseListeners();
+function onMouseUp(element: HTMLElement) {
+  removeMoveListeners(element);
+  removeReleaseListeners(element);
   handleScroll({ reset: true });
 
   if (cursorStyleElement) {
@@ -719,7 +731,7 @@ function watchRectangles() {
   }
 }
 
-function cancelDrag() {
+function cancelDrag(element: HTMLElement) {
   if (isDragging && !isCanceling && !dropAnimationStarted) {
     isCanceling = true;
     missedDrag = false;
@@ -737,13 +749,13 @@ function cancelDrag() {
     draggableInfo.targetElement = null;
     draggableInfo.cancelDrop = true;
 
-    onMouseUp();
+    onMouseUp(element);
     isCanceling = false;
   }
 }
 
-function Mediator() {
-  listenEvents();
+function Mediator(element: HTMLElement) {
+  listenEvents(element);
   return {
     register: function (container: IContainer) {
       registerContainer(container);
@@ -754,7 +766,9 @@ function Mediator() {
     isDragging: function () {
       return isDragging;
     },
-    cancelDrag,
+    cancelDrag: function () {
+      return cancelDrag(element);
+    },
   };
 }
 
@@ -762,4 +776,4 @@ if (typeof window !== 'undefined') {
   addStyleToHead();
 }
 
-export default Mediator();
+export default Mediator;
